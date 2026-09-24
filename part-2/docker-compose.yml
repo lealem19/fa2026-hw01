@@ -1,3 +1,13 @@
+# services:
+#   frontend:
+#     build:
+#       context: ../part-1/frontend
+#       dockerfile: ../Dockerfile
+#       args:
+#         VITE_BACKEND_BASE_URL: http://localhost:8000
+#     ports:
+#       - "8080:80"
+#
 services:
   frontend:
     build:
@@ -7,5 +17,43 @@ services:
         VITE_BACKEND_BASE_URL: http://localhost:8000
     ports:
       - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
-  # TODO: add a `backend` service using the `cis1912/lab02-backend` image
+  backend:
+    image: ghcr.io/cis1912/hw01-backend
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - default
+      - backend-net
+
+  redis:
+    image: redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - backend-net
+
+networks:
+  backend-net:

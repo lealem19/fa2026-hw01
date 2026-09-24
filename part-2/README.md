@@ -18,15 +18,15 @@ services:
       dockerfile: ../Dockerfile
       args:
         VITE_BACKEND_BASE_URL: http://localhost:8000
+- Instead of pulling a prebuilt image, `build:` tells Compose to build the image straight from the Dockerfile you wrote in Part 1. Compose will rebuild it automatically whenever you run `docker compose up --build`.
     ports:
       - "8080:80"
 ```
 
 A couple of things worth noticing here:
 
-- Instead of pulling a prebuilt image, `build:` tells Compose to build the image straight from the Dockerfile you wrote in Part 1. Compose will rebuild it automatically whenever you run `docker compose up --build`.
-- `VITE_BACKEND_BASE_URL` is passed in under `args:`, not `environment:`. Recall from Part 1 that this value gets baked into the static bundle at *build* time — by the time the container is running, there's no process left to read a runtime environment variable, so `environment:` wouldn't do anything here.
-- The URL itself is `http://localhost:8000`, not something like `httpn://backend:8000`. That's because this URL is used by your *browser*, not by a container — and your browser only knows about `localhost`, not Compose's internal network.
+- `VITE_BACKEND_BASE_URL` is passed in under `args:`, not `environment:`. Recall from Part 1 that this value gets baked into the static bundle at _build_ time — by the time the container is running, there's no process left to read a runtime environment variable, so `environment:` wouldn't do anything here.
+- The URL itself is `http://localhost:8000`, not something like `httpn://backend:8000`. That's because this URL is used by your _browser_, not by a container — and your browser only knows about `localhost`, not Compose's internal network.
 
 ### Configuring the Backend Service
 
@@ -81,7 +81,7 @@ docker compose up --build
 
 Depending on timing, you might notice the backend occasionally fails to persist your first few todos to Redis, even though `REDIS_URL` is set correctly. What's going on?
 
-Compose starts containers, but starting a container isn't the same as the service inside it being *ready*. The `redis` image takes a moment to initialize before it can actually accept connections — and if the backend tries to connect before that happens, it may silently fall back to in-memory storage for good, even once Redis becomes reachable a second later.
+Compose starts containers, but starting a container isn't the same as the service inside it being _ready_. The `redis` image takes a moment to initialize before it can actually accept connections — and if the backend tries to connect before that happens, it may silently fall back to in-memory storage for good, even once Redis becomes reachable a second later.
 
 Docker (and Compose) let you define a [`healthcheck`](https://docs.docker.com/reference/compose-file/services/#healthcheck) for a service: a command that gets run periodically inside the container to determine whether the service is actually ready to do its job, not just "started." A service isn't considered `healthy` until its healthcheck passes.
 
@@ -91,9 +91,9 @@ Add a `healthcheck` to your `redis` service. Redis ships with a CLI you can use 
 
 ## Waiting for Dependencies
 
-A `healthcheck` alone doesn't change *when* Compose starts a service — for that, we need `depends_on`. You may already be relying on plain `depends_on` (or the implicit ordering from referencing a service by name) to make sure `redis` and `backend` start in the right order. But by default, `depends_on` only waits for a dependency's container to *start* — not for it to be healthy. That's exactly the gap that caused the flaky behavior you saw above.
+A `healthcheck` alone doesn't change _when_ Compose starts a service — for that, we need `depends_on`. You may already be relying on plain `depends_on` (or the implicit ordering from referencing a service by name) to make sure `redis` and `backend` start in the right order. But by default, `depends_on` only waits for a dependency's container to _start_ — not for it to be healthy. That's exactly the gap that caused the flaky behavior you saw above.
 
-Compose's `depends_on` supports an extended form that lets you wait on a specific *condition*, including a dependency reporting healthy, rather than just started. Look into how to express this in your `docker-compose.yml`, and use it so that:
+Compose's `depends_on` supports an extended form that lets you wait on a specific _condition_, including a dependency reporting healthy, rather than just started. Look into how to express this in your `docker-compose.yml`, and use it so that:
 
 - `backend` doesn't start until `redis` is healthy
 - `frontend` doesn't start until `backend` is healthy
@@ -102,7 +102,7 @@ Tear everything down and bring it back up a few times to confirm the flakiness f
 
 ## Isolating the Network
 
-At this point, `redis` is reachable by `backend` — but on Compose's default shared network, it's *also* reachable by `frontend`, and by anything else you might add to this file later. And if you happened to publish Redis's port to the host, anyone on your machine could connect straight to it with `redis-cli` or any other Redis client, completely bypassing your backend's API.
+At this point, `redis` is reachable by `backend` — but on Compose's default shared network, it's _also_ reachable by `frontend`, and by anything else you might add to this file later. And if you happened to publish Redis's port to the host, anyone on your machine could connect straight to it with `redis-cli` or any other Redis client, completely bypassing your backend's API.
 
 That's a problem: the whole point of building a backend API is to control how data gets read and written. If any client can reach Redis directly, they can read, modify, or delete tasks without going through the validation and logic your backend defines.
 

@@ -1,6 +1,6 @@
 # Part 1: Finishing the Production Frontend Deployment
 
-Recall from Lab 1 that we put together a working frontend Docker image for the Todo app, using the `yarn dev` command to launch the server. But wait — `dev` sounds a bit suspicious! `yarn dev` starts a *development* server, which comes with extras like hot reloading and verbose debugging on top of the basic server functionality. In production, those extras are just unnecessary overhead, and sometimes even a security liability — not something we want to ship.
+Recall from Lab 1 that we put together a working frontend Docker image for the Todo app, using the `yarn dev` command to launch the server. But wait — `dev` sounds a bit suspicious! `yarn dev` starts a _development_ server, which comes with extras like hot reloading and verbose debugging on top of the basic server functionality. In production, those extras are just unnecessary overhead, and sometimes even a security liability — not something we want to ship.
 
 The correct way to run a frontend in production is to serve its **build output**, not the dev server. Modern frontend tooling (Vite, in our case) compiles your source into a small set of static, optimized files. A lightweight static file server — such as `Caddy`, `nginx`, or `traefik` — can then host those files directly. For this assignment, we'll use `Caddy`.
 
@@ -9,7 +9,7 @@ So we need two things:
 - A consistent way to build the production frontend bundle
 - A consistent way to serve the bundle built in the previous step
 
-We'll do this by using something called a *multi-stage build*.
+We'll do this by using something called a _multi-stage build_.
 
 ## Step 0: What is a multi-stage build?
 
@@ -21,7 +21,7 @@ In [RESPONSE.md](../RESPONSE.md), write your response to the following question.
 
 ## Step 1: The Builder Stage
 
-We've provided a working version of the frontend code in `frontend/`. Note that `frontend/` is *not* in the same directory as the [Dockerfile](./Dockerfile) — keep this in mind for any host-side paths you reference (e.g. build context, `COPY` sources).
+We've provided a working version of the frontend code in `frontend/`. Note that `frontend/` is _not_ in the same directory as the [Dockerfile](./Dockerfile) — keep this in mind for any host-side paths you reference (e.g. build context, `COPY` sources).
 
 The Dockerfile already sketches out the two stages you need: a builder stage (`node:20-slim`) and a runner stage (`caddy:alpine`). Your job in this step is to fill in the **builder** stage so that it installs the frontend's dependencies and produces a production build.
 
@@ -51,7 +51,7 @@ Keep in mind the builder stage always runs before the runner stage — the build
 
 ## Step 4: Addressing the ENV Issue
 
-You may have noticed that we've now lost the ability to set the backend URL, `VITE_BACKEND_BASE_URL`, at runtime the way `docker run -e ...` let us do in Lab 1. This is expected for a production build: Vite bakes environment variables into the static bundle *at build time*, so by the time Caddy is serving the files, there's no process left to read a runtime environment variable from.
+You may have noticed that we've now lost the ability to set the backend URL, `VITE_BACKEND_BASE_URL`, at runtime the way `docker run -e ...` let us do in Lab 1. This is expected for a production build: Vite bakes environment variables into the static bundle _at build time_, so by the time Caddy is serving the files, there's no process left to read a runtime environment variable from.
 
 Docker gives us a way to set values like this at build time instead, using `ARG`. Add a build argument named `VITE_BACKEND_BASE_URL` to your builder stage, and make sure it's available to the `yarn build` step (think about how `ARG` and `ENV` interact within a stage).
 
